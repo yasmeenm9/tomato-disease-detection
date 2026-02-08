@@ -7,7 +7,15 @@ import os
 app = Flask(__name__)
 app.config['UPLOAD_FOLDER'] = 'static/uploads'
 
-model = tf.keras.models.load_model("tomato_disease_model.keras")
+#model = tf.keras.models.load_model("tomato_disease_model.keras")
+MODEL_PATH = "tomato_disease_model.keras"
+
+model = None
+if os.path.exists(MODEL_PATH):
+    model = tf.keras.models.load_model(MODEL_PATH)
+else:
+    print("⚠️ Model file not found. Running app without model.")
+
 class_names = ['Early_blight', 'Healthy', 'Late_blight', 'Leaf Miner', 'Spotted Wilt Virus']
 
 @app.route('/', methods=['GET', 'POST'])
