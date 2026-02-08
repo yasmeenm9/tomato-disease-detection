@@ -1,17 +1,18 @@
 from flask import Flask, render_template, request
-import tensorflow as tf
 import numpy as np
-from tensorflow.keras.preprocessing import image
+import tensorflow as tf
 import os
+from tensorflow.keras.preprocessing import image
 
 app = Flask(__name__)
 app.config['UPLOAD_FOLDER'] = 'static/uploads'
 
-MODEL_PATH = "tomato_disease_model.keras"
+# Load TFLite model ONCE
+INTERPRETER = tf.lite.Interpreter(model_path="tomato_disease_model.tflite")
+INTERPRETER.allocate_tensors()
 
-print("🔁 Loading model at startup...")
-model = tf.keras.models.load_model(MODEL_PATH)
-print("✅ Model loaded successfully")
+input_details = INTERPRETER.get_input_details()
+output_details = INTERPRETER.get_output_details()
 
 class_names = [
     'Early_blight',
@@ -28,16 +29,19 @@ def index():
     filename = None
 
     if request.method == 'POST':
-        file = request.files.get('file')
+        file = request.files['file']
         if file:
             filepath = os.path.join(app.config['UPLOAD_FOLDER'], file.filename)
             file.save(filepath)
 
             img = image.load_img(filepath, target_size=(224, 224))
             img_array = image.img_to_array(img)
-            img_array = np.expand_dims(img_array, axis=0) / 255.0
+            img_array = np.expand_dims(img_array, axis=0).astype(np.float32) / 255.0
 
-            preds = model.predict(img_array)
+            INTERPRETER.set_tensor(input_details[0]['index'], img_array)
+            INTERPRETER.invoke()
+
+            preds = INTERPRETER.get_tensor(output_details[0]['index'])
 
             prediction = class_names[np.argmax(preds)]
             confidence = round(float(np.max(preds)) * 100, 2)
