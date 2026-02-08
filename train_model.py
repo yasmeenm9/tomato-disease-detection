@@ -66,5 +66,4 @@ history = model.fit(
 
 # Save model
 model.save("tomato_disease_model.keras")
-
 print("Model training complete and saved!")
