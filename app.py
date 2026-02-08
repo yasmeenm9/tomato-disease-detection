@@ -3,14 +3,21 @@ import tensorflow as tf
 import numpy as np
 from tensorflow.keras.preprocessing import image
 import os
+import tensorflow as tf
 
 app = Flask(__name__)
 app.config['UPLOAD_FOLDER'] = 'static/uploads'
 
-import tensorflow as tf
+MODEL_PATH = "tomato_disease_model.keras"
+model = None
 
-model = tf.keras.models.load_model("tomato_disease_model.keras")
-print("MODEL LOADED SUCCESSFULLY")
+def load_model():
+    global model
+    if model is None:
+        print("Loading model...")
+        model = tf.keras.models.load_model(MODEL_PATH)
+        print("Model loaded successfully")
+    return model
 
 class_names = ['Early_blight', 'Healthy', 'Late_blight', 'Leaf Miner', 'Spotted Wilt Virus']
 
@@ -30,7 +37,9 @@ def index():
             img_array = image.img_to_array(img)
             img_array = np.expand_dims(img_array, axis=0) / 255.0
 
+            model = load_model()
             preds = model.predict(img_array)
+
             prediction = class_names[np.argmax(preds)]
             confidence = round(np.max(preds) * 100, 2)
             filename = file.filename
