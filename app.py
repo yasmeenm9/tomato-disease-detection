@@ -3,23 +3,23 @@ import tensorflow as tf
 import numpy as np
 from tensorflow.keras.preprocessing import image
 import os
-import tensorflow as tf
 
 app = Flask(__name__)
 app.config['UPLOAD_FOLDER'] = 'static/uploads'
 
 MODEL_PATH = "tomato_disease_model.keras"
-model = None
 
-def load_model():
-    global model
-    if model is None:
-        print("Loading model...")
-        model = tf.keras.models.load_model(MODEL_PATH)
-        print("Model loaded successfully")
-    return model
+print("🔁 Loading model at startup...")
+model = tf.keras.models.load_model(MODEL_PATH)
+print("✅ Model loaded successfully")
 
-class_names = ['Early_blight', 'Healthy', 'Late_blight', 'Leaf Miner', 'Spotted Wilt Virus']
+class_names = [
+    'Early_blight',
+    'Healthy',
+    'Late_blight',
+    'Leaf Miner',
+    'Spotted Wilt Virus'
+]
 
 @app.route('/', methods=['GET', 'POST'])
 def index():
@@ -28,7 +28,7 @@ def index():
     filename = None
 
     if request.method == 'POST':
-        file = request.files['file']
+        file = request.files.get('file')
         if file:
             filepath = os.path.join(app.config['UPLOAD_FOLDER'], file.filename)
             file.save(filepath)
@@ -37,11 +37,10 @@ def index():
             img_array = image.img_to_array(img)
             img_array = np.expand_dims(img_array, axis=0) / 255.0
 
-            model = load_model()
             preds = model.predict(img_array)
 
             prediction = class_names[np.argmax(preds)]
-            confidence = round(np.max(preds) * 100, 2)
+            confidence = round(float(np.max(preds)) * 100, 2)
             filename = file.filename
 
     return render_template(
